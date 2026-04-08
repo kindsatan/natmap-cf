@@ -265,16 +265,20 @@
         function AppManager({ apps, tenants, onRefresh }) {
             const [open, setOpen] = React.useState(false);
             const [editing, setEditing] = React.useState(null);
-            const [formData, setFormData] = React.useState({ tenant_id: '', app_name: '' });
+            const [formData, setFormData] = React.useState({ tenant_id: '', app_name: '', description: '' });
             const [loading, setLoading] = React.useState(false);
 
             const handleOpen = (app = null) => {
                 if (app) {
                     setEditing(app);
-                    setFormData({ tenant_id: app.tenant_id, app_name: app.app_name });
+                    setFormData({ 
+                        tenant_id: app.tenant_id, 
+                        app_name: app.app_name,
+                        description: app.description || ''
+                    });
                 } else {
                     setEditing(null);
-                    setFormData({ tenant_id: tenants[0]?.id || '', app_name: '' });
+                    setFormData({ tenant_id: tenants[0]?.id || '', app_name: '', description: '' });
                 }
                 setOpen(true);
             };
@@ -333,6 +337,7 @@
                                 <TableRow>
                                     <TableCell>ID</TableCell>
                                     <TableCell>应用名称</TableCell>
+                                    <TableCell>描述</TableCell>
                                     <TableCell>所属公司</TableCell>
                                     <TableCell>创建时间</TableCell>
                                     <TableCell align="right">操作</TableCell>
@@ -345,6 +350,7 @@
                                         <TableCell>
                                             <Chip label={a.app_name} size="small" color="primary" variant="outlined" />
                                         </TableCell>
+                                        <TableCell>{a.description || '-'}</TableCell>
                                         <TableCell>{a.tenant_name}</TableCell>
                                         <TableCell>{a.created_at}</TableCell>
                                         <TableCell align="right">
@@ -363,7 +369,7 @@
                                 ))}
                                 {apps.length === 0 && (
                                     <TableRow>
-                                        <TableCell colSpan={5} align="center" sx={{ color: 'text.secondary', py: 4 }}>
+                                        <TableCell colSpan={6} align="center" sx={{ color: 'text.secondary', py: 4 }}>
                                             暂无数据
                                         </TableCell>
                                     </TableRow>
@@ -394,6 +400,17 @@
                                 value={formData.app_name}
                                 onChange={e => setFormData({...formData, app_name: e.target.value})}
                                 helperText="例如: vpn, ssh, rdp"
+                                sx={{ mb: 2 }}
+                            />
+                            <TextField
+                                margin="dense"
+                                label="描述"
+                                fullWidth
+                                multiline
+                                rows={3}
+                                value={formData.description}
+                                onChange={e => setFormData({...formData, description: e.target.value})}
+                                helperText="可选，用于说明该应用的用途"
                             />
                         </DialogContent>
                         <DialogActions>

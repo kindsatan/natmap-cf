@@ -32,7 +32,7 @@ export async function onRequestGet(context) {
     // 获取应用列表
     if (type === "all" || type === "apps") {
       const appsResult = await db.prepare(
-        `SELECT a.id, a.app_name, a.tenant_id, a.created_at, t.name as tenant_name 
+        `SELECT a.id, a.app_name, a.tenant_id, a.description, a.created_at, t.name as tenant_name 
          FROM apps a 
          JOIN tenants t ON a.tenant_id = t.id 
          ORDER BY a.id`
@@ -259,6 +259,7 @@ async function createTenant(db, data) {
 async function createApp(db, data) {
   const tenantId = parseInt(data.tenant_id)
   const appName = sanitize(data.app_name)
+  const description = data.description ? sanitize(data.description) : null
   
   if (!tenantId || !appName) {
     return new Response(JSON.stringify({error: "所属公司和应用名称不能为空"}), {
@@ -292,8 +293,8 @@ async function createApp(db, data) {
   }
 
   const result = await db.prepare(
-    "INSERT INTO apps (tenant_id, app_name) VALUES (?, ?)"
-  ).bind(tenantId, appName).run()
+    "INSERT INTO apps (tenant_id, app_name, description) VALUES (?, ?, ?)"
+  ).bind(tenantId, appName, description).run()
 
   return Response.json({
     success: true,
@@ -338,6 +339,7 @@ async function updateTenant(db, id, data) {
 async function updateApp(db, id, data) {
   const tenantId = parseInt(data.tenant_id)
   const appName = sanitize(data.app_name)
+  const description = data.description ? sanitize(data.description) : null
   
   if (!tenantId || !appName) {
     return new Response(JSON.stringify({error: "所属公司和应用名称不能为空"}), {
@@ -359,8 +361,8 @@ async function updateApp(db, id, data) {
   }
 
   await db.prepare(
-    "UPDATE apps SET tenant_id = ?, app_name = ? WHERE id = ?"
-  ).bind(tenantId, appName, id).run()
+    "UPDATE apps SET tenant_id = ?, app_name = ?, description = ? WHERE id = ?"
+  ).bind(tenantId, appName, description, id).run()
 
   return Response.json({
     success: true,
