@@ -10,18 +10,22 @@ export async function onRequestGet(context) {
     }
 
     // 获取所有租户列表
-    const tenants = await db.prepare(
+    const tenantsResult = await db.prepare(
       "SELECT id, name, created_at FROM tenants ORDER BY id"
     ).all()
 
     // 获取所有应用列表
-    const apps = await db.prepare(
+    const appsResult = await db.prepare(
       "SELECT a.id, a.app_name, a.tenant_id, t.name as tenant_name FROM apps a JOIN tenants t ON a.tenant_id = t.id ORDER BY a.id"
     ).all()
 
+    // 处理 D1 返回的不同格式
+    const tenants = Array.isArray(tenantsResult) ? tenantsResult : (tenantsResult.results || [])
+    const apps = Array.isArray(appsResult) ? appsResult : (appsResult.results || [])
+
     return Response.json({
-      tenants: tenants.results || [],
-      apps: apps.results || []
+      tenants: tenants,
+      apps: apps
     })
   } catch (error) {
     return new Response(JSON.stringify({error: error.message}), {

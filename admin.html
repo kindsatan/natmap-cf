@@ -181,10 +181,20 @@
                 const res = await fetch(API_BASE);
                 const data = await res.json();
 
+                // 检查是否有错误
+                if (data.error) {
+                    showMessage('服务器错误: ' + data.error, true);
+                    return;
+                }
+
+                // 确保数据是数组
+                const tenants = Array.isArray(data.tenants) ? data.tenants : [];
+                const apps = Array.isArray(data.apps) ? data.apps : [];
+
                 // 填充公司下拉框
                 const select = document.getElementById('tenantSelect');
                 select.innerHTML = '<option value="">请选择公司</option>';
-                data.tenants.forEach(t => {
+                tenants.forEach(t => {
                     const opt = document.createElement('option');
                     opt.value = t.id;
                     opt.textContent = t.name;
@@ -193,25 +203,26 @@
 
                 // 填充公司表格
                 const tenantsBody = document.querySelector('#tenantsTable tbody');
-                tenantsBody.innerHTML = data.tenants.map(t => `
+                tenantsBody.innerHTML = tenants.length > 0 ? tenants.map(t => `
                     <tr>
                         <td>${t.id}</td>
                         <td>${t.name}</td>
                         <td>${t.created_at}</td>
                     </tr>
-                `).join('');
+                `).join('') : '<tr><td colspan="3" style="text-align:center;color:#999;">暂无数据</td></tr>';
 
                 // 填充应用表格
                 const appsBody = document.querySelector('#appsTable tbody');
-                appsBody.innerHTML = data.apps.map(a => `
+                appsBody.innerHTML = apps.length > 0 ? apps.map(a => `
                     <tr>
                         <td>${a.id}</td>
                         <td>${a.app_name}</td>
                         <td>${a.tenant_name}</td>
                     </tr>
-                `).join('');
+                `).join('') : '<tr><td colspan="3" style="text-align:center;color:#999;">暂无数据</td></tr>';
             } catch (err) {
                 showMessage('加载数据失败: ' + err.message, true);
+                console.error('Error:', err);
             }
         }
 
