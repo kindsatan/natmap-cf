@@ -32,9 +32,12 @@ echo } >> "%PS_SCRIPT%"
 REM 执行 PowerShell 脚本
 for /f "delims=" %%i in ('powershell -NoProfile -ExecutionPolicy Bypass -File "%PS_SCRIPT%"') do (
     set "LINE=%%i"
-    if "!LINE:~0,3!=="IP=" set IP=!LINE:~3!
-    if "!LINE:~0,5!=="PORT=" set PORT=!LINE:~5!
-    if "!LINE:~0,6!=="ERROR=" set ERROR_MSG=!LINE:~6!
+    set "PREFIX=!LINE:~0,3!"
+    if "!PREFIX!=="IP=" set IP=!LINE:~3!
+    set "PREFIX=!LINE:~0,5!"
+    if "!PREFIX!=="PORT=" set PORT=!LINE:~5!
+    set "PREFIX=!LINE:~0,6!"
+    if "!PREFIX!=="ERROR=" set ERROR_MSG=!LINE:~6!
 )
 
 REM 删除临时脚本
