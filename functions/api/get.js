@@ -39,6 +39,13 @@ export async function onRequestGet(context){
       })
     }
 
+    // 将 UTC 时间转换为北京时间 (UTC+8)
+    if (result.updated_at) {
+      const utcDate = new Date(result.updated_at + 'Z')
+      const beijingDate = new Date(utcDate.getTime() + 8 * 60 * 60 * 1000)
+      result.updated_at = beijingDate.toISOString().slice(0, 19).replace('T', ' ')
+    }
+
     return Response.json(result)
   } catch (error) {
     return new Response(JSON.stringify({error: error.message}), {
