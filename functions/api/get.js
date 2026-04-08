@@ -63,15 +63,16 @@ export async function onRequestGet(context){
       result.updated_at = beijingDate.toISOString().slice(0, 19).replace('T', ' ')
     }
 
-    // 3. 写入 KV 缓存（异步，不阻塞响应）
+    // 3. 写入 KV 缓存
     if (kv) {
-      context.waitUntil(
-        kv.put(cacheKey, JSON.stringify(result), { 
+      try {
+        await kv.put(cacheKey, JSON.stringify(result), { 
           expirationTtl: 30  // 30秒过期
-        }).catch(e => console.error('KV write error:', e))
-      )
-      // 添加缓存未命中标记（调试用）
-      result._cache = 'MISS'
+        })
+        result._cache = 'MISS_WRITTEN'
+      } catch (e) {
+        result._cache = 'MISS_ERROR: ' + e.message
+      }
     } else {
       result._cache = 'NO_KV'
     }
