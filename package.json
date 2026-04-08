@@ -1,0 +1,22 @@
+{
+  "name": "natmap-cf",
+  "version": "1.0.0",
+  "description": "NATMap service running on Cloudflare Pages with D1 database",
+  "main": "index.html",
+  "scripts": {
+    "dev": "wrangler pages dev .",
+    "deploy": "wrangler pages deploy ."
+  },
+  "keywords": [
+    "natmap",
+    "nat",
+    "cloudflare",
+    "pages",
+    "d1"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
