@@ -67,7 +67,7 @@ export async function onRequestGet(context){
     if (kv) {
       try {
         await kv.put(cacheKey, JSON.stringify(result), { 
-          expirationTtl: 30  // 30秒过期
+          expirationTtl: 60  // 60秒过期（KV 最小值）
         })
         result._cache = 'MISS_WRITTEN'
       } catch (e) {
