@@ -6,18 +6,17 @@ REM NATMap Client 启动脚本
 REM 通过 API 获取最新映射地址并启动 client.exe
 
 REM 配置参数
-set TENANT=喀什信海通电子科技有限公司
-set APP=http2tunnel1
+REM 使用 tenant_id 和 app_id 替代中文名称，避免编码问题
+set TENANT_ID=3
+set APP_ID=3
 set TOKEN=zhc
 set TRANSPORT=tcp
 
-REM 使用 PowerShell 进行 URL 编码并获取数据
+REM 获取映射数据
 echo 正在获取最新映射地址...
 
 for /f "delims=" %%i in ('powershell -NoProfile -Command "
-    $tenant = [System.Uri]::EscapeDataString('%TENANT%');
-    $app = [System.Uri]::EscapeDataString('%APP%');
-    $url = 'https://nm.kszhc.top/api/get?tenant=' + $tenant + '&app=' + $app;
+    $url = 'https://nm.kszhc.top/api/get?tenant_id=%TENANT_ID%&app_id=%APP_ID%';
     try {
         $r = Invoke-RestMethod -Uri $url -Method GET -UseBasicParsing;
         if ($r.public_ip -and $r.public_port) {
@@ -31,9 +30,9 @@ for /f "delims=" %%i in ('powershell -NoProfile -Command "
     }
 "') do (
     set "LINE=%%i"
-    if "!LINE:~0,3!=="IP=" set IP=!LINE:~3!
-    if "!LINE:~0,5!=="PORT=" set PORT=!LINE:~5!
-    if "!LINE:~0,6!=="ERROR=" set ERROR_MSG=!LINE:~6!
+    if "!LINE:~0,3!="IP=" set IP=!LINE:~3!
+    if "!LINE:~0,5!="PORT=" set PORT=!LINE:~5!
+    if "!LINE:~0,6!="ERROR=" set ERROR_MSG=!LINE:~6!
 )
 
 REM 检查是否获取成功

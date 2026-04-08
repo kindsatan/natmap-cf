@@ -10,11 +10,11 @@ export async function onRequestGet(context){
     }
     
     const url = new URL(context.request.url)
-    const tenant = url.searchParams.get("tenant")
-    const app = url.searchParams.get("app")
+    const tenantId = url.searchParams.get("tenant_id")
+    const appId = url.searchParams.get("app_id")
     
-    if (!tenant || !app) {
-      return new Response(JSON.stringify({error: "Missing tenant or app parameter"}), {
+    if (!tenantId || !appId) {
+      return new Response(JSON.stringify({error: "Missing tenant_id or app_id parameter"}), {
         status: 400,
         headers: {"Content-Type": "application/json"}
       })
@@ -23,13 +23,11 @@ export async function onRequestGet(context){
     const result = await db.prepare(`
       SELECT public_ip,public_port,updated_at
       FROM mappings m
-      JOIN tenants t ON m.tenant_id=t.id
-      JOIN apps a ON m.app_id=a.id
-      WHERE t.name=? AND a.app_name=?
+      WHERE m.tenant_id=? AND m.app_id=?
       ORDER BY updated_at DESC
       LIMIT 1
     `)
-    .bind(tenant,app)
+    .bind(parseInt(tenantId), parseInt(appId))
     .first()
 
     if(!result){
