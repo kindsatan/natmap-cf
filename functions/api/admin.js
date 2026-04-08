@@ -20,8 +20,18 @@ export async function onRequestGet(context) {
     ).all()
 
     // 处理 D1 返回的不同格式
-    const tenants = Array.isArray(tenantsResult) ? tenantsResult : (tenantsResult.results || [])
+    let tenants = Array.isArray(tenantsResult) ? tenantsResult : (tenantsResult.results || [])
     const apps = Array.isArray(appsResult) ? appsResult : (appsResult.results || [])
+
+    // 将创建时间转换为北京时间 (UTC+8)
+    tenants = tenants.map(t => {
+      if (t.created_at) {
+        const utcDate = new Date(t.created_at + 'Z')
+        const beijingDate = new Date(utcDate.getTime() + 8 * 60 * 60 * 1000)
+        t.created_at = beijingDate.toISOString().slice(0, 19).replace('T', ' ')
+      }
+      return t
+    })
 
     return Response.json({
       tenants: tenants,
