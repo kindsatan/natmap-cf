@@ -28,6 +28,8 @@ export async function onRequestGet(context){
       try {
         const cached = await kv.get(cacheKey, { type: 'json' })
         if (cached) {
+          // 添加缓存命中标记（调试用）
+          cached._cache = 'HIT'
           return Response.json(cached)
         }
       } catch (e) {
@@ -68,6 +70,10 @@ export async function onRequestGet(context){
           expirationTtl: 30  // 30秒过期
         }).catch(e => console.error('KV write error:', e))
       )
+      // 添加缓存未命中标记（调试用）
+      result._cache = 'MISS'
+    } else {
+      result._cache = 'NO_KV'
     }
 
     return Response.json(result)
