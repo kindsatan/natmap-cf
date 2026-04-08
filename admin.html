@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理后台</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 30px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #f48120;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 30px;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-weight: bold;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #f48120;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #e07010;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            display: none;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #555;
+        }
+        tr:hover {
+            background: #f8f9fa;
+        }
+        .section {
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #eee;
+        }
+        .section:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>管理后台</h1>
+        
+        <div id="message" class="message"></div>
+
+        <div class="section">
+            <h2>添加公司 (Tenant)</h2>
+            <div class="form-group">
+                <label>公司名称</label>
+                <input type="text" id="tenantName" placeholder="例如: companyB">
+            </div>
+            <div class="form-group">
+                <label>API Key</label>
+                <input type="text" id="apiKey" placeholder="例如: xyz789apikey">
+            </div>
+            <button onclick="addTenant()">添加公司</button>
+        </div>
+
+        <div class="section">
+            <h2>添加应用 (App)</h2>
+            <div class="form-group">
+                <label>选择公司</label>
+                <select id="tenantSelect">
+                    <option value="">请选择公司</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>应用名称</label>
+                <input type="text" id="appName" placeholder="例如: ssh, rdp, vpn">
+            </div>
+            <button onclick="addApp()">添加应用</button>
+        </div>
+
+        <div class="section">
+            <h2>现有数据</h2>
+            <h3>公司列表</h3>
+            <table id="tenantsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>名称</th>
+                        <th>创建时间</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <h3>应用列表</h3>
+            <table id="appsTable">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>应用名</th>
+                        <th>所属公司</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        // 从 URL 参数获取 admin key
+        const urlParams = new URLSearchParams(window.location.search);
+        const ADMIN_KEY = urlParams.get('key') || '';
+        const API_BASE = '/api/admin?key=' + encodeURIComponent(ADMIN_KEY);
+
+        function showMessage(text, isError = false) {
+            const msg = document.getElementById('message');
+            msg.textContent = text;
+            msg.className = 'message ' + (isError ? 'error' : 'success');
+            setTimeout(() => msg.className = 'message', 3000);
+        }
+
+        async function loadData() {
+            try {
+                const res = await fetch(API_BASE);
+                const data = await res.json();
+
+                // 填充公司下拉框
+                const select = document.getElementById('tenantSelect');
+                select.innerHTML = '<option value="">请选择公司</option>';
+                data.tenants.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t.id;
+                    opt.textContent = t.name;
+                    select.appendChild(opt);
+                });
+
+                // 填充公司表格
+                const tenantsBody = document.querySelector('#tenantsTable tbody');
+                tenantsBody.innerHTML = data.tenants.map(t => `
+                    <tr>
+                        <td>${t.id}</td>
+                        <td>${t.name}</td>
+                        <td>${t.created_at}</td>
+                    </tr>
+                `).join('');
+
+                // 填充应用表格
+                const appsBody = document.querySelector('#appsTable tbody');
+                appsBody.innerHTML = data.apps.map(a => `
+                    <tr>
+                        <td>${a.id}</td>
+                        <td>${a.app_name}</td>
+                        <td>${a.tenant_name}</td>
+                    </tr>
+                `).join('');
+            } catch (err) {
+                showMessage('加载数据失败: ' + err.message, true);
+            }
+        }
+
+        async function addTenant() {
+            const name = document.getElementById('tenantName').value.trim();
+            const apiKey = document.getElementById('apiKey').value.trim();
+
+            if (!name || !apiKey) {
+                showMessage('请填写完整信息', true);
+                return;
+            }
+
+            try {
+                const res = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'add_tenant',
+                        name: name,
+                        api_key: apiKey
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    showMessage('公司添加成功');
+                    document.getElementById('tenantName').value = '';
+                    document.getElementById('apiKey').value = '';
+                    loadData();
+                } else {
+                    showMessage(data.error || '添加失败', true);
+                }
+            } catch (err) {
+                showMessage('请求失败: ' + err.message, true);
+            }
+        }
+
+        async function addApp() {
+            const tenantId = document.getElementById('tenantSelect').value;
+            const appName = document.getElementById('appName').value.trim();
+
+            if (!tenantId || !appName) {
+                showMessage('请填写完整信息', true);
+                return;
+            }
+
+            try {
+                const res = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'add_app',
+                        tenant_id: parseInt(tenantId),
+                        app_name: appName
+                    })
+                });
+
+                const data = await res.json();
+                if (data.success) {
+                    showMessage('应用添加成功');
+                    document.getElementById('appName').value = '';
+                    loadData();
+                } else {
+                    showMessage(data.error || '添加失败', true);
+                }
+            } catch (err) {
+                showMessage('请求失败: ' + err.message, true);
+            }
+        }
+
+        // 页面加载时获取数据
+        loadData();
+    </script>
+</body>
+</html>

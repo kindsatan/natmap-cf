@@ -7,6 +7,19 @@ export async function onRequest(context) {
       return next()
     }
 
+    // 管理接口需要特殊认证（通过查询参数传递 admin_key）
+    if (url.pathname === "/api/admin") {
+      const adminKey = url.searchParams.get("key")
+      
+      // 简单的密码验证，建议在生产环境中使用更强的认证方式
+      if (adminKey !== env.ADMIN_KEY) {
+        return new Response(JSON.stringify({error: "Unauthorized"}), {
+          status: 401,
+          headers: {"Content-Type": "application/json"}
+        })
+      }
+    }
+
     if (url.pathname === "/api/update") {
       
       if (!env.DB) {
