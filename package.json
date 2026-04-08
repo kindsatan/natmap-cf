@@ -4,8 +4,7 @@
   "description": "NATMap service running on Cloudflare Pages with D1 database",
   "main": "index.html",
   "scripts": {
-    "dev": "wrangler pages dev .",
-    "deploy": "wrangler pages deploy ."
+    "dev": "wrangler pages dev ."
   },
   "keywords": [
     "natmap",
