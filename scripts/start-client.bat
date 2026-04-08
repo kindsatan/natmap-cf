@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 chcp 65001 >nul
 
 REM NATMap Client 启动脚本
@@ -12,27 +13,14 @@ set TRANSPORT=tcp
 
 echo 正在获取最新映射地址...
 
-REM 使用 curl 获取数据
-curl -s "https://nm.kszhc.top/api/get?tenant_id=%TENANT_ID%&app_id=%APP_ID%" > %TEMP%\natmap_response.json
-
-REM 解析 JSON 获取 IP 和端口
-for /f "tokens=2 delims=:" %%a in ('findstr "public_ip" %TEMP%\natmap_response.json') do (
-    set IP=%%a
-    set IP=!IP:"=!
-    set IP=!IP: =!
-    set IP=!IP:,=!
+REM 使用 PowerShell 解析 JSON（更可靠）
+for /f "delims=" %%a in ('powershell -NoProfile -Command "(Invoke-RestMethod -Uri 'https://nm.kszhc.top/api/get?tenant_id=%TENANT_ID%&app_id=%APP_ID%').public_ip"') do (
+    set "IP=%%a"
 )
 
-for /f "tokens=2 delims=:" %%b in ('findstr "public_port" %TEMP%\natmap_response.json') do (
-    set PORT=%%b
-    set PORT=!PORT:"=!
-    set PORT=!PORT: =!
-    set PORT=!PORT:,=!
-    set PORT=!PORT:}=!
+for /f "delims=" %%b in ('powershell -NoProfile -Command "(Invoke-RestMethod -Uri 'https://nm.kszhc.top/api/get?tenant_id=%TENANT_ID%&app_id=%APP_ID%').public_port"') do (
+    set "PORT=%%b"
 )
-
-REM 删除临时文件
-del %TEMP%\natmap_response.json 2>nul
 
 REM 检查是否获取成功
 if "%IP%"=="" (

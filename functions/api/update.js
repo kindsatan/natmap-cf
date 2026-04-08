@@ -1,6 +1,7 @@
 export async function onRequestPost(context){
   try {
     const db = context.env.DB
+    const kv = context.env.NATMAP_KV
     
     if (!db) {
       return new Response(JSON.stringify({error: "Database not configured"}), {
@@ -30,25 +31,26 @@ export async function onRequestPost(context){
       })
     }
 
-    await db.prepare(
-      "DELETE FROM mappings WHERE tenant_id=? AND app_id=?"
-    ).bind(tenant_id,appRow.id).run()
+    // 使用 batch 保证原子性
+    const statements = [
+      db.prepare("DELETE FROM mappings WHERE tenant_id=? AND app_id=?")
+        .bind(tenant_id, appRow.id),
+      db.prepare(`
+        INSERT INTO mappings
+        (tenant_id,app_id,public_ip,public_port,local_ip,local_port,protocol,updated_at)
+        VALUES (?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
+      `).bind(tenant_id, appRow.id, ip, port, local_ip, local_port, proto)
+    ]
+    
+    await db.batch(statements)
 
-    await db.prepare(`
-      INSERT INTO mappings
-      (tenant_id,app_id,public_ip,public_port,local_ip,local_port,protocol,updated_at)
-      VALUES (?,?,?,?,?,?,?,CURRENT_TIMESTAMP)
-    `)
-    .bind(
-      tenant_id,
-      appRow.id,
-      ip,
-      port,
-      local_ip,
-      local_port,
-      proto
-    )
-    .run()
+    // 删除 KV 缓存，让下次查询重新加载最新数据
+    if (kv) {
+      const cacheKey = `mapping:${tenant_id}:${appRow.id}`
+      context.waitUntil(
+        kv.delete(cacheKey).catch(e => console.error('KV delete error:', e))
+      )
+    }
 
     return Response.json({status:"ok"})
   } catch (error) {

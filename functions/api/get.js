@@ -1,6 +1,7 @@
 export async function onRequestGet(context){
   try {
     const db = context.env.DB
+    const kv = context.env.NATMAP_KV
     
     if (!db) {
       return new Response(JSON.stringify({error: "Database not configured"}), {
@@ -20,6 +21,22 @@ export async function onRequestGet(context){
       })
     }
 
+    const cacheKey = `mapping:${tenantId}:${appId}`
+    
+    // 1. 先尝试从 KV 读取缓存
+    if (kv) {
+      try {
+        const cached = await kv.get(cacheKey, { type: 'json' })
+        if (cached) {
+          return Response.json(cached)
+        }
+      } catch (e) {
+        // KV 读取失败，继续查询 D1
+        console.error('KV read error:', e)
+      }
+    }
+
+    // 2. KV 未命中或不可用，查询 D1
     const result = await db.prepare(`
       SELECT public_ip,public_port,updated_at
       FROM mappings m
@@ -42,6 +59,15 @@ export async function onRequestGet(context){
       const utcDate = new Date(result.updated_at + 'Z')
       const beijingDate = new Date(utcDate.getTime() + 8 * 60 * 60 * 1000)
       result.updated_at = beijingDate.toISOString().slice(0, 19).replace('T', ' ')
+    }
+
+    // 3. 写入 KV 缓存（异步，不阻塞响应）
+    if (kv) {
+      context.waitUntil(
+        kv.put(cacheKey, JSON.stringify(result), { 
+          expirationTtl: 30  // 30秒过期
+        }).catch(e => console.error('KV write error:', e))
+      )
     }
 
     return Response.json(result)

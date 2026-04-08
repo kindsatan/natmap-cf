@@ -161,6 +161,7 @@ export async function onRequestPut(context) {
 export async function onRequestDelete(context) {
   try {
     const db = context.env.DB
+    const kv = context.env.NATMAP_KV
     const url = new URL(context.request.url)
     const type = url.searchParams.get("type")
     const id = url.searchParams.get("id")
@@ -185,7 +186,7 @@ export async function onRequestDelete(context) {
       case "app":
         return await deleteApp(db, id)
       case "mapping":
-        return await deleteMapping(db, id)
+        return await deleteMapping(db, kv, id)
       default:
         return new Response(JSON.stringify({error: "Unknown type"}), {
           status: 400,
@@ -412,8 +413,26 @@ async function deleteApp(db, id) {
   })
 }
 
-async function deleteMapping(db, id) {
+async function deleteMapping(db, kv, id) {
+  // 先查询出映射信息，用于清除缓存
+  let mappingInfo = null
+  if (kv) {
+    try {
+      mappingInfo = await db.prepare(
+        "SELECT tenant_id, app_id FROM mappings WHERE id = ?"
+      ).bind(id).first()
+    } catch (e) {
+      console.error('Query mapping for cache clear error:', e)
+    }
+  }
+  
   await db.prepare("DELETE FROM mappings WHERE id = ?").bind(id).run()
+  
+  // 清除对应的 KV 缓存
+  if (kv && mappingInfo) {
+    const cacheKey = `mapping:${mappingInfo.tenant_id}:${mappingInfo.app_id}`
+    await kv.delete(cacheKey).catch(e => console.error('KV delete error:', e))
+  }
 
   return Response.json({
     success: true,

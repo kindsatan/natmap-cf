@@ -1,0 +1,13 @@
+1、功能说明
+natmap打洞，通过脚本更新到cf的数据库中，客户端通过脚本接口调用查询ip和端口，完成没有固定ip的通信。
+
+2、操作说明
+https://nm.kszhc.top/admin?key=zhc2838328
+通过这个网址增加公司名称，app名称
+通过update.sh脚本进行更新ip和端口，方便客户端查询。
+
+
+3、使用案例
+在没有公网ip的情况下，使用natmap打洞映射，可实现
+http2tunnel隧道
+wireguard隧道组网
