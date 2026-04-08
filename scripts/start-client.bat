@@ -6,7 +6,7 @@ REM NATMap Client 启动脚本
 REM 通过 API 获取最新映射地址并启动 client.exe
 
 REM 配置参数
-set API_URL=https://nm.kszhc.top/api/get?tenant=companyA&app=vpn
+set API_URL=https://nm.kszhc.top/api/get?tenant=喀什信海通电子科技有限公司&app=http2tunnel1
 set TOKEN=zhc
 set TRANSPORT=tcp
 
