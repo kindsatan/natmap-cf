@@ -6,41 +6,51 @@ REM NATMap Client 启动脚本
 REM 通过 API 获取最新映射地址并启动 client.exe
 
 REM 配置参数
-set API_URL=https://nm.kszhc.top/api/get?tenant=喀什信海通电子科技有限公司&app=http2tunnel1
+set TENANT=喀什信海通电子科技有限公司
+set APP=http2tunnel1
 set TOKEN=zhc
 set TRANSPORT=tcp
 
-REM 获取映射数据
+REM 使用 PowerShell 进行 URL 编码并获取数据
 echo 正在获取最新映射地址...
-for /f "delims=" %%i in ('powershell -Command "try { $r=Invoke-RestMethod -Uri '%API_URL%' -Method GET; Write-Host ('{\"ip\":\"' + $r.public_ip + '\",\"port\":' + $r.public_port + '}') } catch { Write-Host '{\"error\":\"' + $_.Exception.Message + '"}' }"') do set RESULT=%%i
 
-REM 解析 JSON
-echo 解析响应数据...
-for /f "tokens=2 delims=:" %%a in ('echo !RESULT! ^| findstr "ip"') do (
-    set IP_RAW=%%a
-    set IP=!IP_RAW:"=!
-    set IP=!IP: =!
-    set IP=!IP:,=!
-)
-
-for /f "tokens=2 delims=:" %%b in ('echo !RESULT! ^| findstr "port"') do (
-    set PORT_RAW=%%b
-    set PORT=!PORT_RAW:"=!
-    set PORT=!PORT: =!
-    set PORT=!PORT:}=!
+for /f "delims=" %%i in ('powershell -NoProfile -Command "
+    $tenant = [System.Uri]::EscapeDataString('%TENANT%');
+    $app = [System.Uri]::EscapeDataString('%APP%');
+    $url = 'https://nm.kszhc.top/api/get?tenant=' + $tenant + '&app=' + $app;
+    try {
+        $r = Invoke-RestMethod -Uri $url -Method GET -UseBasicParsing;
+        if ($r.public_ip -and $r.public_port) {
+            Write-Host ('IP=' + $r.public_ip);
+            Write-Host ('PORT=' + $r.public_port);
+        } else {
+            Write-Host 'ERROR=无法解析响应数据';
+        }
+    } catch {
+        Write-Host ('ERROR=' + $_.Exception.Message);
+    }
+"') do (
+    set "LINE=%%i"
+    if "!LINE:~0,3!=="IP=" set IP=!LINE:~3!
+    if "!LINE:~0,5!=="PORT=" set PORT=!LINE:~5!
+    if "!LINE:~0,6!=="ERROR=" set ERROR_MSG=!LINE:~6!
 )
 
 REM 检查是否获取成功
+if defined ERROR_MSG (
+    echo 错误: !ERROR_MSG!
+    pause
+    exit /b 1
+)
+
 if "!IP!"=="" (
     echo 错误: 无法获取 IP 地址
-    echo 响应内容: !RESULT!
     pause
     exit /b 1
 )
 
 if "!PORT!"=="" (
     echo 错误: 无法获取端口号
-    echo 响应内容: !RESULT!
     pause
     exit /b 1
 )
